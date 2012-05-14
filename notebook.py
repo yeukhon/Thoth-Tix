@@ -8,7 +8,7 @@ from docui_buttons import DocSideButtons
 from docui_search import DocSearchUI
 from historyui import HistoryUI
 import re
-
+import random
 
 class Homepage:
 
@@ -294,6 +294,7 @@ class Homepage:
         if self.user.info['usergroup'] != 4:
             self.handler_page_editorPlus()
             self.handler_page_history(f.document)
+            self.handler_page_search()
         return
 
     def create_page_editorPlus(self, nb):
@@ -322,8 +323,68 @@ class Homepage:
         f.cmpt.btext.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
 
         tab.f = f
-        return
 
+    def create_page_search(self, nb, keywords=None, docid=None):
+        tab = nb.search
+        f = Tix.Frame(tab)
+        #self.dummy = f
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.search_frame = Tix.Frame(f)
+        f.search_frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.search_frame.keywords = Tix.LabelEntry(f.search_frame, label='Keyword:', \
+                labelside=Tix.LEFT)
+        f.search_frame.keywords.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+        self.dummy = f.search_frame.keywords
+
+        f.search_frame.bt1 = Tix.Button(f.search_frame, text='Find within opened document', \
+                command=self.handler_search_within_doc)
+        f.search_frame.bt1.pack(side=Tix.RIGHT, padx=3, pady=2, fill=Tix.X, expand=0)
+
+        f.search_frame.bt2 = Tix.Button(f.search_frame, text='Find in all documents', \
+                command=self.handler_search_in_all_docs)
+        f.search_frame.bt2.pack(side=Tix.RIGHT, padx=3, pady=2, fill=Tix.X, expand=0)
+
+        f.shl = Tix.ScrolledHList(f)
+        f.shl.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+       
+        #res = [{'hello': '1', 'world':'2', 'what': '3'}, {'hello': '1', 'world':'2', 'what': '3'}]
+        res = []
+        if keywords and docid:
+            res = self.user.manage.manage_Indx.search(keywords, docid)
+        elif keywords:
+            res = self.user.manage.manage_Indx.search(keywords)
+        print keywords
+        #res.insert(0, {'Word': 'Word', 'Line': 'Line', 'Column': 'Column'})
+        print 'res', res
+        start = 1
+        for i in res: 
+            rowf = Tix.Frame(f.shl.hlist)
+            print i
+            if start > 1:
+                col1 = Tix.Label(rowf, text=i['branch_word'], width=35)
+                col2 = Tix.Label(rowf, text=i['line'], width=15)
+                col3 = Tix.Label(rowf, text=i['column'], width=15)
+            else:
+                col1 = Tix.Label(rowf, text='Word', width=35)
+                col2 = Tix.Label(rowf, text='Line', width=15)
+                col3 = Tix.Label(rowf, text='Column', width=15)
+
+            col1.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+            col2.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+            col3.pack(side=Tix.BOTTOM, padx=2, pady=2, fill=Tix.X, expand=1)
+            f.shl.hlist.add('Id%s' %i['id'], itemtype=Tix.WINDOW, window=rowf)
+            start += 1
+
+        tab.f=f
+
+    def handler_search_within_doc(self):
+        keywords = self.dummy.entry.get()
+        docid = self.nb.editor.f.tb.document.info['id']
+        self.nb.delete('search')
+        self.handler_page_search(keywords, docid)
+        
     def create_page_comment(self, nb):
         tab = nb.comment
         f = Tix.Frame(tab)
@@ -642,6 +703,10 @@ class Homepage:
             tkMessageBox.showerror('Failed', 'Membership failed.')
         return
 
+
+    def handler_search_in_all_docs(self):
+        pass
+
     def handler_open_document(self, docid):
         try:
             self.nb.add('editor', label="Editor", underline=0)
@@ -672,6 +737,13 @@ class Homepage:
             return
         except:
             return
+
+    def handler_page_search(self, keywords=None, docid=None):
+        try:
+            self.nb.add('search', label='Search')
+            self.create_page_search(self.nb, keywords, docid)
+        except:
+            pass
 
     def handler_page_editorPlus(self):
         try:
