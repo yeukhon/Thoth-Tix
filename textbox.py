@@ -15,7 +15,7 @@ class TextBox():
     def __init__(self, master, parent):
         self.parent = parent
         self.pref = Preferences()
-
+        
         self.spellcheck = {}
 
         print 'pass pref'
@@ -23,49 +23,28 @@ class TextBox():
         # contains three elements, a Text widget for the line numbers, a Text
         # widget for the content, and a vertical scrollbar.
         self.frame = Frame(master, relief=FLAT)
-        print 'pass frame'
-        # Style:
-        self.font_family = self.pref.info['font_family']
-        self.font_height = self.pref.info['font_height']
-        self.font_style  = "normal"
-        self.font_slant  = "italic"
-        self.font_misspell = tkFont.Font(
-            family=self.font_family, size=self.font_height,
-            slant=self.font_slant)
-
-        self.font = (self.font_family, self.font_height, self.font_style)
-
-        if self.pref.info['line_numbers']:
-            # Time interval at whic we want the line numbers to update.
-            self.update_interval = 300
-
-            # The variable that will hold the line numbers. The line numbers are in
-            # essence just a string that will be the body of a Text widget.
-            self.str_ln = ""
-
-            # The line numbers will be held in a Text widget that is disabled, i.e
-            # the users cannnot edit its contents.
-            self.text_ln = Text(self.frame, state='disabled', width=1, padx=4,
-                background= 'lightgrey', foreground='magenta', relief=FLAT)
-            self.text_ln.pack(side=LEFT, fill='y')
-            self.text_ln.config(font=self.font)
-            self.update_line_numbers()
 
         print 'pass lnnum'
         # The Text widget that will contain the content.
         self.str_content = ""
+
+        # The line numbers will be held in a Text widget that is disabled, i.e
+        # the users cannnot edit its contents.
+        self.text_ln = Text(self.frame, state='disabled', width=1, padx=4,
+            background= 'lightgrey', foreground='magenta', relief=FLAT)
+
         self.text_content = Text(self.frame, undo=True,
-            bg=self.pref.info['bg_color'], fg=self.pref.info['fg_color'],
-            selectbackground=self.pref.info['select_bg'],
-            selectforeground=self.pref.info['select_fg'],
             insertbackground='#A020F0',
             relief=FLAT, bd=0, wrap=WORD)
+            
+        self.scroll_vbar = Scrollbar(self.frame, orient=VERTICAL)
+        
         self.text_content.pack(side=LEFT, fill='both', expand=1)
+        self.scroll_vbar.pack(fill='y', side=RIGHT)
 
+        self.update_preferences()
         print 'pass conten'
         # The vertical scrollbar.
-        self.scroll_vbar = Scrollbar(self.frame, orient=VERTICAL)
-        self.scroll_vbar.pack(fill='y', side=RIGHT)
 
         # The vertical scrollbar needs to be linked to the text widget that has
         # the user content otherwise the scrollbar will not scroll the text.
@@ -88,6 +67,45 @@ class TextBox():
         print 'pass top'
         return
 
+    def update_preferences(self):
+        self.font_family = self.pref.info['font_family']
+        self.font_height = self.pref.info['font_height']
+        self.font_style  = "normal"
+        self.font_slant  = "italic"
+        self.font_misspell = tkFont.Font(
+            family=self.font_family, size=self.font_height,
+            slant=self.font_slant)
+
+        self.font = (self.font_family, self.font_height, self.font_style)
+
+        self.text_content.config(
+            bg=self.pref.info['bg_color'], fg=self.pref.info['fg_color'],
+            selectbackground=self.pref.info['select_bg'],
+            selectforeground=self.pref.info['select_fg'])
+        
+        if self.pref.info['line_numbers']:
+            # Time interval at whic we want the line numbers to update.
+            self.update_interval = 300
+
+            # The variable that will hold the line numbers. The line numbers are in
+            # essence just a string that will be the body of a Text widget.
+            self.str_ln = ""
+            
+            self.text_ln.pack_forget()
+            self.text_content.pack_forget()
+            self.scroll_vbar.pack_forget()
+                
+            self.text_ln.pack(side=LEFT, fill='y')
+            self.text_content.pack(side=LEFT, fill='both', expand=1)
+            self.scroll_vbar.pack(fill='y', side=RIGHT)
+
+            self.text_ln.config(font=self.font)
+            self.update_line_numbers()
+        else:
+            self.text_ln.pack_forget()
+
+        return
+        
     def get_line_numbers(self):
         # Reset the line numbers to be empty.
         temp_str_ln = ''
@@ -192,7 +210,7 @@ class TextBox():
         print 'pass set con'
         # If the user is not owner or a member of the supplied document:
         if not self.document.is_member(self.user.info['id']):
-            self.text_content.config(bg='#D9D9D9', fg='black')
+            self.text_content.config(bg='#4D4D4D', fg='#FFA500')
             self.text_content.config(state=DISABLED)
         # Else the user is either owner or a member of the supplied document:
         else:
@@ -424,7 +442,8 @@ class TextBox():
             # Add the underline tags.
             self.text_content.tag_add(
                 "misspelled", index, "%s+%dc" % (index, len(word)))
-            self.spellcheck[word] = permwords(self.user.info['id'], word)
+            if not word in self.spellcheck:
+                self.spellcheck[word] = permwords(self.user.info['id'], word)
             print self.spellcheck[word]
 
         return

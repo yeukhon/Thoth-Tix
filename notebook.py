@@ -17,6 +17,8 @@ class Homepage:
         self.master = master
         self.user = user
 
+        master.title('Thoth')
+
         # We use these options to set the sizes of the subwidgets inside the
         # notebook, so that they are well-aligned on the screen.
         prefix = Tix.OptionName(master)
@@ -29,9 +31,12 @@ class Homepage:
         master.option_add(prefix+'*TixControl*label.anchor', Tix.E)
         master.option_add(prefix+'*TixNoteBook*tagPadX', 8)
 
+        self.logout = Tix.Button(master, text='Logout',
+            command=self.handler_logout)
+
         # Create the notebook widget.
         self.nb = Tix.NoteBook(master, name='nb', ipadx=6, ipady=6,
-            width=400, height=400)
+            width=600, height=400)
 
         # Create the two tabs on the notebook. The -underline option
         # puts a underline on the first character of the labels of the tabs.
@@ -127,6 +132,7 @@ class Homepage:
         tab.f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f.curr = LabelButton(tab.f, label='', button='Go Up')
+        tab.f.curr.label.config(bg='#ADD8E6', width=55)
         tab.f.curr.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.X, expand=1)
 
         tab.f.shl = Tix.ScrolledHList(tab.f)
@@ -278,10 +284,15 @@ class Homepage:
         f.btns.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.btns.save = Tix.Button(f.btns, text='Save', command=self.handler_save_document)
-        f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y)
+
+        f.btns.spell = Tix.Button(f.btns, text='Spellcheck', command=self.handler_page_spellcheck)
+
+        if self.user.info['usergroup'] != 4:
+            f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2)
+            f.btns.spell.pack(side=Tix.LEFT, padx=2, pady=2)
 
         f.btns.close = Tix.Button(f.btns, text='Close', command=self.handler_close_document)
-        f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y)
+        f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2)
 
         f.tb = TextBox(f, f)
         f.document = Document(docid)
@@ -303,14 +314,17 @@ class Homepage:
         f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         f.inv = Tix.Frame(f)
-        f.inv.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.inv.name = Tix.LabelEntry(f.inv, label="Enter the user's name:")
-        f.inv.name.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.inv.bname = Tix.Button(f.inv, text='Invite',
             command=self.handler_invite_user)
-        f.inv.bname.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        if self.nb.editor.f.tb.document.is_member(self.user.info['id']):
+            f.inv.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+            f.inv.name.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+            f.inv.bname.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+            
 
         f.cmpt = Tix.Frame(f)
         f.cmpt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
@@ -321,6 +335,50 @@ class Homepage:
         f.cmpt.btext = Tix.Button(f.cmpt, text='Submit',
             command=self.handler_user_complaint)
         f.cmpt.btext.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        pref = nb.editor.f.tb.pref.info
+        f.pref = Tix.Frame(f)
+        f.pref.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.msg = Tix.Label(f.pref, text='Preferences')
+        f.pref.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.pref.lnum = Tix.Checkbutton(f.pref, text='Show Line Numbers.')
+        f.pref.lnum.var = Tix.IntVar()
+        f.pref.lnum.config(variable=f.pref.lnum.var)
+        f.pref.lnum.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.bg = Tix.LabelEntry(f.pref, label='Background Color:')
+        f.pref.bg.entry.config(width=7)
+        f.pref.bg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        
+        f.pref.fg = Tix.LabelEntry(f.pref, label='Foreground Color:')
+        f.pref.fg.entry.config(width=7)
+        f.pref.fg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.sbg = Tix.LabelEntry(f.pref, label='Select BG Color:')
+        f.pref.sbg.entry.config(width=7)
+        f.pref.sbg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        
+        f.pref.sfg = Tix.LabelEntry(f.pref, label='Select FG Color:')
+        f.pref.sfg.entry.config(width=7)
+        f.pref.sfg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.fh = Tix.LabelEntry(f.pref, label='Font Height:')
+        f.pref.fh.entry.config(width=3)
+        f.pref.fh.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.btn = Tix.Button(f.pref, text='Save',
+            command=self.handler_save_preferences)
+        f.pref.btn.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        if pref['line_numbers']:
+            f.pref.lnum.var.set(1)
+        f.pref.bg.entry.insert(0, pref['bg_color'])
+        f.pref.fg.entry.insert(0, pref['fg_color'])
+        f.pref.sbg.entry.insert(0, pref['select_bg'])
+        f.pref.sfg.entry.insert(0, pref['select_fg'])
+        f.pref.fh.entry.insert(0, pref['font_height'])
 
         tab.f = f
 
@@ -492,6 +550,32 @@ class Homepage:
         tab.f = f
         return
 
+    def create_page_spellcheck(self, nb):
+        tab = nb.spell
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass frame'
+        f.dic = self.nb.editor.f.tb.spellcheck
+        
+        f.msg = Tix.Message(f, text='')
+        
+        f.sug = Tix.Frame(f)
+        
+        f.btns = Tix.ButtonBox(f, orientation=Tix.VERTICAL)
+        print 'pass vert'
+        f.btns.add('change', text='Change',
+            command=self.handler_spellcheck_change)
+        print 'pass change'
+        f.btns.add('add', text='Add to Dic',
+            command=self.handler_spellcheck_add)
+        f.btns.add('next', text='Next',
+            command=self.handler_spellcheck_next)
+        
+        print 'pass pack'
+        tab.f = f
+        self.handler_spellcheck_next()
+        return
+
     def handler_login(self, event=0):
         # Get the username the user typed.
         name = self.nb.login.f.name.entry.get()
@@ -527,8 +611,16 @@ class Homepage:
             self.nb.login.f.name.entry.delete(0, len(name))
             self.nb.login.f.pwd.entry.delete(0, len(password))
 
+            self.nb.pack_forget()
+            self.logout.pack(side=Tix.TOP, padx=2, pady=2)
+            self.nb.pack(side=Tix.TOP, padx=5, pady=5, fill=Tix.BOTH, expand=1)
+
             self.nb.delete('login')
-            self.nb.delete('reg')
+            try:
+                self.nb.delete('reg')
+            except:
+                pass
+            self.nb.raise_page('directory')
 
             tkMessageBox.showinfo(
                 'Authenticated', 'Welcome back! Logged in as %s' %res['username'])
@@ -556,6 +648,7 @@ class Homepage:
                  tkMessageBox.showinfo('Successful', "You have just signed up an account. Please wait for system admin to approve your application. Thank you.")
 
                  self.nb.delete('reg')
+                 self.nb.raise_page('login')
 
              else:
                  tkMessageBox.showerror('Password do not match', 'The passwords you entered do not match. Try again!')
@@ -581,6 +674,11 @@ class Homepage:
                 self.nb.make.f.mdir.entry.delete(0, len(name))
                 # Update the display to show the newly created directory.
                 self.update_directory(self.directory['id'])
+                tkMessageBox.showinfo(
+                    'Success',
+                    'Directory "' + name +
+                    '" was created!')
+                self.nb.raise_page('directory')
             # Else the directory was not created:
             else:
                 # Show the appropriate error message.
@@ -616,6 +714,11 @@ class Homepage:
                 self.nb.make.f.mdoc.entry.delete(0, len(name))
                 # Update the display to show the newly created document.
                 self.update_directory(self.directory['id'])
+                tkMessageBox.showinfo(
+                    'Success',
+                    'Document "' + name +
+                    '" was created!')
+                self.nb.raise_page('directory')
             # Else the document was not created:
             else:
                 # Show the appropriate error message.
@@ -660,6 +763,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'User has been created!')
             self.nb.delete('application')
             self.handler_page_applications()
+            self.nb.raise_page('application')
         else:
             tkMessageBox.showerror('Failed', 'Approval failed.')
         return
@@ -670,6 +774,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'User has been denied!')
             self.nb.delete('application')
             self.handler_page_applications()
+            self.nb.raise_page('application')
         else:
             tkMessageBox.showerror('Failed', 'Denial failed.')
         return
@@ -685,6 +790,7 @@ class Homepage:
                 tkMessageBox.showinfo('Success', 'You are a member of the document!')
                 self.nb.delete('invitation')
                 self.handler_page_invitations()
+                self.nb.raise_page('invitation')
             else:
                 tkMessageBox.showerror('Failed', 'Updating Membership failed.')
         else:
@@ -699,6 +805,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'You are not a member of the document!')
             self.nb.delete('invitation')
             self.handler_page_invitations()
+            self.nb.raise_page('invitation')
         else:
             tkMessageBox.showerror('Failed', 'Membership failed.')
         return
@@ -711,6 +818,7 @@ class Homepage:
         try:
             self.nb.add('editor', label="Editor", underline=0)
             self.create_page_editor(self.nb, docid)
+            self.nb.raise_page('editor')
             return
         except:
             return
@@ -727,6 +835,7 @@ class Homepage:
         if self.user.info['usergroup'] != 4:
             self.nb.delete('editorPlus')
             self.nb.delete('history')
+        self.nb.raise_page('directory')
         return
 
     def handler_page_history(self, document):
@@ -784,6 +893,7 @@ class Homepage:
         if res:
             self.nb.delete('comment')
             self.handler_page_comment()
+            self.nb.raise_page('comment')
             tkMessageBox.showinfo('Succes', 'Comment was added.')
         else:
             tkMessageBox.showerror('Failure', 'Your comment was not added.')
@@ -807,6 +917,7 @@ class Homepage:
         res = self.user.complain(docid, content)
 
         if res:
+            self.nb.editorPlus.f.cmpt.text.entry.delete(0, len(content))
             tkMessageBox.showinfo('Succes', 'Complaint was sent to the Admin.')
         else:
             tkMessageBox.showerror('Failure', 'Your complaint was not sent.')
@@ -832,6 +943,7 @@ class Homepage:
 
                 self.nb.delete('complaint')
                 self.handler_page_complaint()
+                self.nb.raise_page('complaint')
                 tkMessageBox.showinfo('Success', 'Response was sent.')
         else:
             tkMessageBox.showerror('Failed', 'ID must be a number.')
@@ -853,6 +965,160 @@ class Homepage:
         else:
             tkMessageBox.showerror('Failed', 'ID must be a number.')
 
+    def handler_save_preferences(self):
+        pref = self.nb.editorPlus.f.pref
+        info = self.nb.editor.f.tb.pref.info
+        
+        if pref.lnum.var.get() == 1:
+            info['line_numbers'] = True
+        else:
+            info['line_numbers'] = False
+            
+        if re.match('\#[0-9a-fA-F]{6}', pref.bg.entry.get()):
+            info['bg_color'] = pref.bg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Background color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.fg.entry.get()):
+            info['fg_color'] = pref.fg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Foreground color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.sbg.entry.get()):
+            info['select_bg'] = pref.sbg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Select background color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.sfg.entry.get()):
+            info['select_bg'] = pref.sfg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Select foreground color is invalid!')
+            return
+
+        if re.match('\d+', pref.fh.entry.get()):
+            info['font_height'] = int(pref.fh.entry.get())
+        else:
+            tkMessageBox.showerror('Failed', 'Font size is invalid!')
+            return
+
+        self.nb.editor.f.tb.pref.save()
+        self.nb.editor.f.tb.update_preferences()
+        tkMessageBox.showinfo('Success', 'Preferences were saved!')
+
+    def handler_page_spellcheck(self):
+        try:
+            self.nb.add('spell', label="SpellCheck")
+            self.create_page_spellcheck(self.nb)
+            return
+        except:
+            return
+
+    def handler_spellcheck_change(self):
+        tb = self.nb.editor.f.tb.text_content
+        wrong = self.nb.spell.f.cur[0]
+        sug = self.nb.spell.f.sug.var.get()
+        index = tb.search(wrong, '0.0', nocase=1)
+        while index != '':
+            tb.delete(index, '%s +%sc' % (index, len(wrong)))
+            tb.insert(index, sug)
+            index = tb.search(wrong, '0.0', nocase=1)
+
+        tkMessageBox.showinfo('Success', 'The word was replaced in the editor!')
+        self.handler_spellcheck_next()
+        return
+
+    def handler_spellcheck_add(self):
+        wrong = self.nb.spell.f.cur[0]
+        userid = self.user.info['id']
+        res = self.user.manage.manage_DB.insert_info('X%s' % userid, insert={'word': wrong})
+
+        if res:
+            tkMessageBox.showinfo('Success', 'The word was added to your dictionary!')
+        else:
+            tkMessageBox.showerror('Success', 'The word was not added your dictionary!')
+        self.handler_spellcheck_next()
+
+    def handler_spellcheck_next(self):
+        f = self.nb.spell.f
+        f.msg.pack_forget()
+        f.sug.pack_forget()
+        f.btns.pack_forget()
+        print 'pass forget'
+        if len(f.dic) == 0:
+            f.msg.config(text='There are no misspellings.')
+            f.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+            return
+
+        f.cur = f.dic.popitem()
+        print 'pass dic'
+        f.msg.config(text=f.cur[0])
+        f.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass msg'
+        f.sug = Tix.Frame(f)
+        f.sug.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass sug frame'
+        f.sug.var = Tix.StringVar()
+        f.sug.arr = []
+        print 'pass svar'
+        for i in f.cur[1]:
+            f.sug.arr.append(Tix.Radiobutton(f.sug, text=i['word'], value=i['word'], variable=f.sug.var))
+            f.sug.arr[-1].pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        
+        f.btns.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+    def handler_logout(self):
+        self.user = Guest()
+
+        try:
+            self.nb.delete('make')
+        except:
+            pass
+
+        try:
+            self.nb.delete('control')
+        except:
+            pass
+            
+        try:
+            self.nb.delete('editor')
+            self.nb.delete('comment')
+        except:
+            pass
+
+        try:
+            self.nb.delete('editorPlus')
+            self.nb.delete('history')
+        except:
+            pass
+
+        try:
+            self.nb.delete('invitation')
+        except:
+            pass
+        try:
+            self.nb.delete('complaint')
+        except:
+            pass
+
+        try:
+            self.nb.delete('application')
+        except:
+            pass
+            
+        self.logout.pack_forget()
+
+        self.nb.add('login', label="Login", underline=0)
+        self.nb.add('reg', label="Register", underline=0)
+
+        self.create_page_login(self.nb)
+        self.create_page_register(self.nb)
+        self.nb.raise_page('directory')
+        return
+
     def update_directory(self, dirid):
         if dirid == 0:
             return
@@ -872,13 +1138,15 @@ class Homepage:
         files = self.user.manage.manage_Docs.get_directory_documents(dirid)
 
         for row in folders:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+            lb = LabelButton(shl.hlist, label='Folder: %s' % row['name'], button='View', 
                 command=lambda i=row['id']: self.update_directory(i))
+            lb.label.config(bg='#A020F0', width=55)
             shl.hlist.add('D%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
 
         for row in files:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+            lb = LabelButton(shl.hlist, label='File: %s' % row['name'], button='View',
                 command=lambda i=row['id']: self.handler_open_document(i))
+            lb.label.config(bg='#90EE90', width=55)
             shl.hlist.add('F%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
 
         try:
