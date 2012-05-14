@@ -442,7 +442,8 @@ class TextBox():
             # Add the underline tags.
             self.text_content.tag_add(
                 "misspelled", index, "%s+%dc" % (index, len(word)))
-            self.spellcheck[word] = permwords(self.user.info['id'], word)
+            if not word in self.spellcheck:
+                self.spellcheck[word] = permwords(self.user.info['id'], word)
             print self.spellcheck[word]
 
         return

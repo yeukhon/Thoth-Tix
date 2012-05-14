@@ -280,6 +280,10 @@ class Homepage:
         f.btns.save = Tix.Button(f.btns, text='Save', command=self.handler_save_document)
         f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y)
 
+        f.btns.spell = Tix.Button(f.btns, text='Spellcheck', command=self.handler_page_spellcheck)
+        if self.user.info['usergroup'] != 4:
+            f.btns.spell.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y)
+
         f.btns.close = Tix.Button(f.btns, text='Close', command=self.handler_close_document)
         f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y)
 
@@ -473,6 +477,32 @@ class Homepage:
         f.history.frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f = f
+        return
+
+    def create_page_spellcheck(self, nb):
+        tab = nb.spell
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass frame'
+        f.dic = self.nb.editor.f.tb.spellcheck
+        
+        f.msg = Tix.Message(f, text='')
+        
+        f.sug = Tix.Frame(f)
+        
+        f.btns = Tix.ButtonBox(f, orientation=Tix.VERTICAL)
+        print 'pass vert'
+        f.btns.add('change', text='Change',
+            command=self.handler_spellcheck_change)
+        print 'pass change'
+        f.btns.add('add', text='Add to Dic',
+            command=self.handler_spellcheck_add)
+        f.btns.add('next', text='Next',
+            command=self.handler_spellcheck_next)
+        
+        print 'pass pack'
+        tab.f = f
+        self.handler_spellcheck_next()
         return
 
     def handler_login(self, event=0):
@@ -868,6 +898,68 @@ class Homepage:
         self.nb.editor.f.tb.pref.save()
         self.nb.editor.f.tb.update_preferences()
         tkMessageBox.showinfo('Success', 'Preferences were saved!')
+
+    def handler_page_spellcheck(self):
+        try:
+            self.nb.add('spell', label="SpellCheck")
+            self.create_page_spellcheck(self.nb)
+            return
+        except:
+            return
+
+    def handler_spellcheck_change(self):
+        tb = self.nb.editor.f.tb.text_content
+        wrong = self.nb.spell.f.cur[0]
+        sug = self.nb.spell.f.sug.var.get()
+        index = tb.search(wrong, '0.0', nocase=1)
+        while index != '':
+            tb.delete(index, '%s +%sc' % (index, len(wrong)))
+            tb.insert(index, sug)
+            index = tb.search(wrong, '0.0', nocase=1)
+
+        tkMessageBox.showinfo('Success', 'The word was replaced in the editor!')
+        self.handler_spellcheck_next()
+        return
+
+    def handler_spellcheck_add(self):
+        wrong = self.nb.spell.f.cur[0]
+        userid = self.user.info['id']
+        res = self.user.manage.manage_DB.insert_info('X%s' % userid, insert={'word': wrong})
+
+        if res:
+            tkMessageBox.showinfo('Success', 'The word was added to your dictionary!')
+        else:
+            tkMessageBox.showerror('Success', 'The word was not added your dictionary!')
+        self.handler_spellcheck_next()
+
+    def handler_spellcheck_next(self):
+        f = self.nb.spell.f
+        f.msg.pack_forget()
+        f.sug.pack_forget()
+        f.btns.pack_forget()
+        print 'pass forget'
+        if len(f.dic) == 0:
+            f.msg.config(text='There are no misspellings.')
+            f.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+            return
+
+        f.cur = f.dic.popitem()
+        print 'pass dic'
+        f.msg.config(text=f.cur[0])
+        f.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass msg'
+        f.sug = Tix.Frame(f)
+        f.sug.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass sug frame'
+        f.sug.var = Tix.StringVar()
+        f.sug.arr = []
+        print 'pass svar'
+        for i in f.cur[1]:
+            f.sug.arr.append(Tix.Radiobutton(f.sug, text=i['word'], value=i['word'], variable=f.sug.var))
+            f.sug.arr[-1].pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        
+        f.btns.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
     def update_directory(self, dirid):
         if dirid == 0:
