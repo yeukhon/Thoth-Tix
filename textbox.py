@@ -6,6 +6,7 @@ import re, string
 import tkMessageBox
 from preferences import Preferences
 import Tix
+from permutationwords import permwords
 
 
 class TextBox():
@@ -14,6 +15,9 @@ class TextBox():
     def __init__(self, master, parent):
         self.parent = parent
         self.pref = Preferences()
+
+        self.spellcheck = {}
+
         print 'pass pref'
         # This frame will be derived from the frame that is passed to it and will
         # contains three elements, a Text widget for the line numbers, a Text
@@ -74,7 +78,7 @@ class TextBox():
         self.text_content.tag_configure("misspelled", font=self.font_misspell, foreground="red", underline=1)
         self.text_content.tag_configure("autocomplete", background="#0000ff")
 
-        #self.correct_words = open('dbs/words').read().split('\n')
+        self.correct_words = open('dbs/words').read().split('\n')
 
         self.ac_ideal = ''
         self.text_content.bind("<Any-KeyPress>", self.handle_keypress)
@@ -308,7 +312,7 @@ class TextBox():
                 self.ac_ideal = ''
 
             # Check whether the last word is misspelled.
-            #self.handle_misspell(verbose=False)
+            self.handle_misspell(verbose=False)
 
         # User pressed the return key.
         elif event.keysym == 'Return':
@@ -328,7 +332,7 @@ class TextBox():
                 return "break"
 
             # Check whether the last word is misspelled.
-            #self.handle_misspell(verbose=False)
+            self.handle_misspell(verbose=False)
 
         # User pressed the backspace key.
         elif event.keysym == 'BackSpace':
@@ -420,6 +424,8 @@ class TextBox():
             # Add the underline tags.
             self.text_content.tag_add(
                 "misspelled", index, "%s+%dc" % (index, len(word)))
+            self.spellcheck[word] = permwords(self.user.info['id'], word)
+            print self.spellcheck[word]
 
         return
 
