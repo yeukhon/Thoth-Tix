@@ -31,7 +31,7 @@ class Homepage:
 
         # Create the notebook widget.
         self.nb = Tix.NoteBook(master, name='nb', ipadx=6, ipady=6,
-            width=400, height=400)
+            width=600, height=400)
 
         # Create the two tabs on the notebook. The -underline option
         # puts a underline on the first character of the labels of the tabs.
@@ -320,6 +320,50 @@ class Homepage:
         f.cmpt.btext = Tix.Button(f.cmpt, text='Submit',
             command=self.handler_user_complaint)
         f.cmpt.btext.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        pref = nb.editor.f.tb.pref.info
+        f.pref = Tix.Frame(f)
+        f.pref.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.msg = Tix.Label(f.pref, text='Preferences')
+        f.pref.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.pref.lnum = Tix.Checkbutton(f.pref, text='Show Line Numbers.')
+        f.pref.lnum.var = Tix.IntVar()
+        f.pref.lnum.config(variable=f.pref.lnum.var)
+        f.pref.lnum.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.bg = Tix.LabelEntry(f.pref, label='Background Color:')
+        f.pref.bg.entry.config(width=7)
+        f.pref.bg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        
+        f.pref.fg = Tix.LabelEntry(f.pref, label='Foreground Color:')
+        f.pref.fg.entry.config(width=7)
+        f.pref.fg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.sbg = Tix.LabelEntry(f.pref, label='Select BG Color:')
+        f.pref.sbg.entry.config(width=7)
+        f.pref.sbg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        
+        f.pref.sfg = Tix.LabelEntry(f.pref, label='Select FG Color:')
+        f.pref.sfg.entry.config(width=7)
+        f.pref.sfg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.fh = Tix.LabelEntry(f.pref, label='Font Height:')
+        f.pref.fh.entry.config(width=3)
+        f.pref.fh.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.pref.btn = Tix.Button(f.pref, text='Save',
+            command=self.handler_save_preferences)
+        f.pref.btn.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        if pref['line_numbers']:
+            f.pref.lnum.var.set(1)
+        f.pref.bg.entry.insert(0, pref['bg_color'])
+        f.pref.fg.entry.insert(0, pref['fg_color'])
+        f.pref.sbg.entry.insert(0, pref['select_bg'])
+        f.pref.sfg.entry.insert(0, pref['select_fg'])
+        f.pref.fh.entry.insert(0, pref['font_height'])
 
         tab.f = f
         return
@@ -735,6 +779,7 @@ class Homepage:
         res = self.user.complain(docid, content)
 
         if res:
+            self.nb.editorPlus.f.cmpt.text.entry.delete(0, len(content))
             tkMessageBox.showinfo('Succes', 'Complaint was sent to the Admin.')
         else:
             tkMessageBox.showerror('Failure', 'Your complaint was not sent.')
@@ -780,6 +825,49 @@ class Homepage:
                 tkMessageBox.showinfo('Success', 'Response was sent.')
         else:
             tkMessageBox.showerror('Failed', 'ID must be a number.')
+
+    def handler_save_preferences(self):
+        pref = self.nb.editorPlus.f.pref
+        info = self.nb.editor.f.tb.pref.info
+        
+        if pref.lnum.var.get() == 1:
+            info['line_numbers'] = True
+        else:
+            info['line_numbers'] = False
+            
+        if re.match('\#[0-9a-fA-F]{6}', pref.bg.entry.get()):
+            info['bg_color'] = pref.bg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Background color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.fg.entry.get()):
+            info['fg_color'] = pref.fg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Foreground color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.sbg.entry.get()):
+            info['select_bg'] = pref.sbg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Select background color is invalid!')
+            return
+
+        if re.match('\#[0-9a-fA-F]{6}', pref.sfg.entry.get()):
+            info['select_bg'] = pref.sfg.entry.get()
+        else:
+            tkMessageBox.showerror('Failed', 'Select foreground color is invalid!')
+            return
+
+        if re.match('\d+', pref.fh.entry.get()):
+            info['font_height'] = int(pref.fh.entry.get())
+        else:
+            tkMessageBox.showerror('Failed', 'Font size is invalid!')
+            return
+
+        self.nb.editor.f.tb.pref.save()
+        self.nb.editor.f.tb.update_preferences()
+        tkMessageBox.showinfo('Success', 'Preferences were saved!')
 
     def update_directory(self, dirid):
         if dirid == 0:
