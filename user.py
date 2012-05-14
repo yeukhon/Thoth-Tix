@@ -294,7 +294,7 @@ class SuperUser(User):
         # Query for all complaints for the supplied document.
         rows = self.manage.manage_DB.get_info('complaint', where={
             'status':0})
-
+        print rows
         # Return comments as a list.
         res = []
         for row in rows:
@@ -311,7 +311,7 @@ class SuperUser(User):
             res.append({'id': row['id'], 'doc': doc_info['name'],
                 'user': usr_info['username'], 'content': row['content'],
                 'time': datetime.fromtimestamp(int(row['time']))})
-
+        print res
         # Return the list of results.
         return res
 

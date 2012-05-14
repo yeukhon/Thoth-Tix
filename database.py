@@ -520,11 +520,6 @@ class Database(object):
                 response text default ''
             )""")
 
-            # Not necessary, but insert a test complaint.
-            c.execute("""insert into complaint values (
-                NULL,
-                ?, ?, ?, ?, ?, ?)""", (0, 0, 'Sample complaint...', time(), 0, ''))
-
             # Commit all the changes we have made to the database and close the
             # cursor.
             conn.commit()
@@ -40659,7 +40654,7 @@ class Database(object):
             else:
                 # Return False to indicate failure.
                 return False
-        
+
         # At this point, the user database must exist, so create a database
         # connection to the file.
         conn = sqlite3.connect('%s/usrdic.db' % self.BASE_DIR)
@@ -41066,7 +41061,7 @@ class Database(object):
         conn.close()
 
         return
-        
+
 if __name__ == "__main__":
     verbose = False
     dbm = Database()
@@ -41093,7 +41088,7 @@ if __name__ == "__main__":
         'name': 'Oak',
         'parent_dir': 1}, verbose=verbose)
 
-    
+
 
     # Print the content of the database.
     dbm.print_DB('user')

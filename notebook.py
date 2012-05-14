@@ -7,6 +7,7 @@ from document import Document
 from docui_buttons import DocSideButtons
 from docui_search import DocSearchUI
 from historyui import HistoryUI
+import re
 
 
 class Homepage:
@@ -368,11 +369,23 @@ class Homepage:
         f.shl = Tix.ScrolledHList(f)
         f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=9)
 
+        rowf = Tix.Frame(f.shl.hlist)
+        item = [
+            Tix.Label(rowf, text='ID', width=3),
+            Tix.Label(rowf, text='user', width=10),
+            Tix.Label(rowf, text='content', width=30),
+            Tix.Label(rowf, text='time', width=20)
+        ]
+        for i in item:
+            i.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+        f.shl.hlist.add('header', itemtype=Tix.WINDOW, window=rowf)
+
         invs = self.user.get_all_complaints()
+        print 'fewfe', invs
         for row in invs:
             rowf = Tix.Frame(f.shl.hlist)
             item = [
-                Tix.Label(rowf, text=row['ID'], width=3),
+                Tix.Label(rowf, text=row['id'], width=3),
                 Tix.Label(rowf, text=row['user'], width=10),
                 Tix.Label(rowf, text=row['content'], width=30),
                 Tix.Label(rowf, text=row['time'], width=20)
@@ -385,23 +398,25 @@ class Homepage:
 
             f.shl.hlist.add('I%s' % row['id'], itemtype=Tix.WINDOW, window=rowf)
 
+        print 'pass shl'
         f.res = Tix.Frame(f)
-        f.res.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
-
+        f.res.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass frame'
         f.res.ID = Tix.LabelEntry(f.res, label='ID:', labelside=Tix.LEFT)
-        f.res.ID.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
-
-        f.res.chk = Tix.OptionMenu(f.res, label='Valid:')
-        f.res,chk.add_command('1', label='Yes')
-        f.res,chk.add_command('-1', label='No')
-        f.res.chk.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+        f.res.ID.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        print 'pass label entr'
 
         f.res.txt = Tix.LabelEntry(f.res, label='Response:', labelside=Tix.LEFT)
-        f.res.txt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+        f.res.txt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+        print 'pass txt'
+        f.res.btny = Tix.Button(f.res, text='Valid',
+            command=self.handler_approve_complaint)
+        f.res.btny.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
 
-        f.res.btn = Tix.Button(f.res, text='Submit')
-        f.res.btn.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
-
+        f.res.btnn = Tix.Button(f.res, text='Invalid',
+            command=self.handler_disapprove_complaint)
+        f.res.btnn.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y, expand=1)
+        print 'pass butn'
         tab.f = f
         return
 
@@ -733,6 +748,38 @@ class Homepage:
             return
         except:
             return
+
+    def handler_approve_complaint(self):
+        ID = self.nb.complaint.f.res.ID.entry.get()
+        if re.match('\d+', ID):
+            ID = int(ID)
+            res = self.user.manage.manage_DB.get_info('complaint', rowid=ID)
+            if res:
+                text = self.nb.complaint.f.res.txt.entry.get()
+                self.user.response_complaint(ID, 1, text)
+
+                self.nb.delete('complaint')
+                self.handler_page_complaint()
+                tkMessageBox.showinfo('Success', 'Response was sent.')
+        else:
+            tkMessageBox.showerror('Failed', 'ID must be a number.')
+
+        return
+
+    def handler_disapprove_complaint(self):
+        ID = self.nb.complaint.f.res.ID.entry.get()
+        if re.match('\d+', ID):
+            ID = int(ID)
+            res = self.user.manage.manage_DB.get_info('complaint', rowid=ID)
+            if res:
+                text = self.nb.complaint.f.res.txt.entry.get()
+                self.user.response_complaint(ID, -1, text)
+
+                self.nb.delete('complaint')
+                self.handler_page_complaint()
+                tkMessageBox.showinfo('Success', 'Response was sent.')
+        else:
+            tkMessageBox.showerror('Failed', 'ID must be a number.')
 
     def update_directory(self, dirid):
         if dirid == 0:
