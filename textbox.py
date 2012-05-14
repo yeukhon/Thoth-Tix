@@ -210,7 +210,7 @@ class TextBox():
         print 'pass set con'
         # If the user is not owner or a member of the supplied document:
         if not self.document.is_member(self.user.info['id']):
-            self.text_content.config(bg='#D9D9D9', fg='black')
+            self.text_content.config(bg='#4D4D4D', fg='#FFA500')
             self.text_content.config(state=DISABLED)
         # Else the user is either owner or a member of the supplied document:
         else:

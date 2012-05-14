@@ -17,6 +17,8 @@ class Homepage:
         self.master = master
         self.user = user
 
+        master.title('Thoth')
+
         # We use these options to set the sizes of the subwidgets inside the
         # notebook, so that they are well-aligned on the screen.
         prefix = Tix.OptionName(master)
@@ -28,6 +30,9 @@ class Homepage:
         master.option_add(prefix+'*TixControl*label.width', 18)
         master.option_add(prefix+'*TixControl*label.anchor', Tix.E)
         master.option_add(prefix+'*TixNoteBook*tagPadX', 8)
+
+        self.logout = Tix.Button(master, text='Logout',
+            command=self.handler_logout)
 
         # Create the notebook widget.
         self.nb = Tix.NoteBook(master, name='nb', ipadx=6, ipady=6,
@@ -127,6 +132,7 @@ class Homepage:
         tab.f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f.curr = LabelButton(tab.f, label='', button='Go Up')
+        tab.f.curr.label.config(bg='#ADD8E6', width=55)
         tab.f.curr.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.X, expand=1)
 
         tab.f.shl = Tix.ScrolledHList(tab.f)
@@ -278,14 +284,15 @@ class Homepage:
         f.btns.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.btns.save = Tix.Button(f.btns, text='Save', command=self.handler_save_document)
-        f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y)
 
         f.btns.spell = Tix.Button(f.btns, text='Spellcheck', command=self.handler_page_spellcheck)
+
         if self.user.info['usergroup'] != 4:
-            f.btns.spell.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y)
+            f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2)
+            f.btns.spell.pack(side=Tix.LEFT, padx=2, pady=2)
 
         f.btns.close = Tix.Button(f.btns, text='Close', command=self.handler_close_document)
-        f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y)
+        f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2)
 
         f.tb = TextBox(f, f)
         f.document = Document(docid)
@@ -306,14 +313,17 @@ class Homepage:
         f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         f.inv = Tix.Frame(f)
-        f.inv.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.inv.name = Tix.LabelEntry(f.inv, label="Enter the user's name:")
-        f.inv.name.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.inv.bname = Tix.Button(f.inv, text='Invite',
             command=self.handler_invite_user)
-        f.inv.bname.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        if self.nb.editor.f.tb.document.is_member(self.user.info['id']):
+            f.inv.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+            f.inv.name.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+            f.inv.bname.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+            
 
         f.cmpt = Tix.Frame(f)
         f.cmpt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
@@ -540,8 +550,16 @@ class Homepage:
             self.nb.login.f.name.entry.delete(0, len(name))
             self.nb.login.f.pwd.entry.delete(0, len(password))
 
+            self.nb.pack_forget()
+            self.logout.pack(side=Tix.TOP, padx=2, pady=2)
+            self.nb.pack(side=Tix.TOP, padx=5, pady=5, fill=Tix.BOTH, expand=1)
+
             self.nb.delete('login')
-            self.nb.delete('reg')
+            try:
+                self.nb.delete('reg')
+            except:
+                pass
+            self.nb.raise_page('directory')
 
             tkMessageBox.showinfo(
                 'Authenticated', 'Welcome back! Logged in as %s' %res['username'])
@@ -569,6 +587,7 @@ class Homepage:
                  tkMessageBox.showinfo('Successful', "You have just signed up an account. Please wait for system admin to approve your application. Thank you.")
 
                  self.nb.delete('reg')
+                 self.nb.raise_page('login')
 
              else:
                  tkMessageBox.showerror('Password do not match', 'The passwords you entered do not match. Try again!')
@@ -594,6 +613,11 @@ class Homepage:
                 self.nb.make.f.mdir.entry.delete(0, len(name))
                 # Update the display to show the newly created directory.
                 self.update_directory(self.directory['id'])
+                tkMessageBox.showinfo(
+                    'Success',
+                    'Directory "' + name +
+                    '" was created!')
+                self.nb.raise_page('directory')
             # Else the directory was not created:
             else:
                 # Show the appropriate error message.
@@ -629,6 +653,11 @@ class Homepage:
                 self.nb.make.f.mdoc.entry.delete(0, len(name))
                 # Update the display to show the newly created document.
                 self.update_directory(self.directory['id'])
+                tkMessageBox.showinfo(
+                    'Success',
+                    'Document "' + name +
+                    '" was created!')
+                self.nb.raise_page('directory')
             # Else the document was not created:
             else:
                 # Show the appropriate error message.
@@ -673,6 +702,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'User has been created!')
             self.nb.delete('application')
             self.handler_page_applications()
+            self.nb.raise_page('application')
         else:
             tkMessageBox.showerror('Failed', 'Approval failed.')
         return
@@ -683,6 +713,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'User has been denied!')
             self.nb.delete('application')
             self.handler_page_applications()
+            self.nb.raise_page('application')
         else:
             tkMessageBox.showerror('Failed', 'Denial failed.')
         return
@@ -698,6 +729,7 @@ class Homepage:
                 tkMessageBox.showinfo('Success', 'You are a member of the document!')
                 self.nb.delete('invitation')
                 self.handler_page_invitations()
+                self.nb.raise_page('invitation')
             else:
                 tkMessageBox.showerror('Failed', 'Updating Membership failed.')
         else:
@@ -712,6 +744,7 @@ class Homepage:
             tkMessageBox.showinfo('Success', 'You are not a member of the document!')
             self.nb.delete('invitation')
             self.handler_page_invitations()
+            self.nb.raise_page('invitation')
         else:
             tkMessageBox.showerror('Failed', 'Membership failed.')
         return
@@ -720,6 +753,7 @@ class Homepage:
         try:
             self.nb.add('editor', label="Editor", underline=0)
             self.create_page_editor(self.nb, docid)
+            self.nb.raise_page('editor')
             return
         except:
             return
@@ -736,6 +770,7 @@ class Homepage:
         if self.user.info['usergroup'] != 4:
             self.nb.delete('editorPlus')
             self.nb.delete('history')
+        self.nb.raise_page('directory')
         return
 
     def handler_page_history(self, document):
@@ -786,6 +821,7 @@ class Homepage:
         if res:
             self.nb.delete('comment')
             self.handler_page_comment()
+            self.nb.raise_page('comment')
             tkMessageBox.showinfo('Succes', 'Comment was added.')
         else:
             tkMessageBox.showerror('Failure', 'Your comment was not added.')
@@ -835,6 +871,7 @@ class Homepage:
 
                 self.nb.delete('complaint')
                 self.handler_page_complaint()
+                self.nb.raise_page('complaint')
                 tkMessageBox.showinfo('Success', 'Response was sent.')
         else:
             tkMessageBox.showerror('Failed', 'ID must be a number.')
@@ -961,6 +998,55 @@ class Homepage:
         
         f.btns.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
+    def handler_logout(self):
+        self.user = Guest()
+
+        try:
+            self.nb.delete('make')
+        except:
+            pass
+
+        try:
+            self.nb.delete('control')
+        except:
+            pass
+            
+        try:
+            self.nb.delete('editor')
+            self.nb.delete('comment')
+        except:
+            pass
+
+        try:
+            self.nb.delete('editorPlus')
+            self.nb.delete('history')
+        except:
+            pass
+
+        try:
+            self.nb.delete('invitation')
+        except:
+            pass
+        try:
+            self.nb.delete('complaint')
+        except:
+            pass
+
+        try:
+            self.nb.delete('application')
+        except:
+            pass
+            
+        self.logout.pack_forget()
+
+        self.nb.add('login', label="Login", underline=0)
+        self.nb.add('reg', label="Register", underline=0)
+
+        self.create_page_login(self.nb)
+        self.create_page_register(self.nb)
+        self.nb.raise_page('directory')
+        return
+
     def update_directory(self, dirid):
         if dirid == 0:
             return
@@ -980,13 +1066,15 @@ class Homepage:
         files = self.user.manage.manage_Docs.get_directory_documents(dirid)
 
         for row in folders:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+            lb = LabelButton(shl.hlist, label='Folder: %s' % row['name'], button='View', 
                 command=lambda i=row['id']: self.update_directory(i))
+            lb.label.config(bg='#A020F0', width=55)
             shl.hlist.add('D%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
 
         for row in files:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+            lb = LabelButton(shl.hlist, label='File: %s' % row['name'], button='View',
                 command=lambda i=row['id']: self.handler_open_document(i))
+            lb.label.config(bg='#90EE90', width=55)
             shl.hlist.add('F%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
 
         try:
