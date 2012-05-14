@@ -414,7 +414,7 @@ class IndexManager:
             'wordid': wordid, 'docid': docid, 'line': line,
             'column': column, 'branch_word': branch_word}, verbose=verbose)
 
-    def search(self, word):
+    def search(self, word, docid=None):
         # Create an instance of the Porter Stemmer.
         PS = PorterStemmer()
 
@@ -427,10 +427,16 @@ class IndexManager:
             # Extract the id for the supplied word.
             wordid = res[0]['id']
 
-            # Get all the entries in the index reference database that refer to
-            # the supplied wordid.
-            res = self.manage_DB.get_info('index_ref', where={
-                'wordid': wordid})
+            if docid:
+                # Get all the entries in the index reference database that refer to
+                # the supplied wordid.
+                res = self.manage_DB.get_info('index_ref', where={
+                    'wordid': wordid, 'docid': docid})
+            else:
+                # Get all the entries in the index reference database that refer to
+                # the supplied wordid.
+                res = self.manage_DB.get_info('index_ref', where={
+                    'wordid': wordid})
 
             # For ever entry in the list.
             for row in res:
