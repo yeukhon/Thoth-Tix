@@ -5,6 +5,7 @@ from sqlite3 import connect
 import re, string
 import tkMessageBox
 from preferences import Preferences
+import Tix
 
 
 class TextBox():
@@ -13,12 +14,12 @@ class TextBox():
     def __init__(self, master, parent):
         self.parent = parent
         self.pref = Preferences()
-
+        print 'pass pref'
         # This frame will be derived from the frame that is passed to it and will
         # contains three elements, a Text widget for the line numbers, a Text
         # widget for the content, and a vertical scrollbar.
         self.frame = Frame(master, relief=FLAT)
-
+        print 'pass frame'
         # Style:
         self.font_family = self.pref.info['font_family']
         self.font_height = self.pref.info['font_height']
@@ -46,6 +47,7 @@ class TextBox():
             self.text_ln.config(font=self.font)
             self.update_line_numbers()
 
+        print 'pass lnnum'
         # The Text widget that will contain the content.
         self.str_content = ""
         self.text_content = Text(self.frame, undo=True,
@@ -56,6 +58,7 @@ class TextBox():
             relief=FLAT, bd=0, wrap=WORD)
         self.text_content.pack(side=LEFT, fill='both', expand=1)
 
+        print 'pass conten'
         # The vertical scrollbar.
         self.scroll_vbar = Scrollbar(self.frame, orient=VERTICAL)
         self.scroll_vbar.pack(fill='y', side=RIGHT)
@@ -71,13 +74,14 @@ class TextBox():
         self.text_content.tag_configure("misspelled", font=self.font_misspell, foreground="red", underline=1)
         self.text_content.tag_configure("autocomplete", background="#0000ff")
 
-        self.correct_words = open('dbs/words').read().split('\n')
+        #self.correct_words = open('dbs/words').read().split('\n')
 
         self.ac_ideal = ''
         self.text_content.bind("<Any-KeyPress>", self.handle_keypress)
+        print 'pass bind'
 
         self.top = master.winfo_toplevel()
-
+        print 'pass top'
         return
 
     def get_line_numbers(self):
@@ -174,15 +178,17 @@ class TextBox():
         return
 
     def initialize(self, user, document):
+        print 'pass enter'
         # Save a copy of the supplied user.
         self.user = user
         # Save a copy of the supplied document.
         self.document = document
-
+        print 'pass set'
         self.set_content_from_doc(self.document)
-
+        print 'pass set con'
         # If the user is not owner or a member of the supplied document:
         if not self.document.is_member(self.user.info['id']):
+            self.text_content.config(bg='#D9D9D9', fg='black')
             self.text_content.config(state=DISABLED)
         # Else the user is either owner or a member of the supplied document:
         else:
@@ -195,12 +201,13 @@ class TextBox():
         fhandle = open(doc.info['ppath']+str(doc.info['id']), 'r')
         contents = fhandle.read()
         fhandle.close()
-
+        print 'pass read'
         self.text_content.insert('1.0', contents)
-
+        print 'pass insert'
         self.document.init_autocompleteDB()
-        self.declare_misspell()
-
+        print 'pass autocom'
+        #self.declare_misspell()
+        print 'pass misspel'
         return
 
     def handler_save_file(self):
@@ -301,7 +308,7 @@ class TextBox():
                 self.ac_ideal = ''
 
             # Check whether the last word is misspelled.
-            self.handle_misspell(verbose=False)
+            #self.handle_misspell(verbose=False)
 
         # User pressed the return key.
         elif event.keysym == 'Return':
@@ -321,7 +328,7 @@ class TextBox():
                 return "break"
 
             # Check whether the last word is misspelled.
-            self.handle_misspell(verbose=False)
+            #self.handle_misspell(verbose=False)
 
         # User pressed the backspace key.
         elif event.keysym == 'BackSpace':

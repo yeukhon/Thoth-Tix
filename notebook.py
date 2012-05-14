@@ -1,6 +1,8 @@
 import Tix
 import tkMessageBox
 from user import Guest, RegularUser, SuperUser
+from textbox import TextBox
+from document import Document
 
 
 class Homepage:
@@ -52,10 +54,12 @@ class Homepage:
 
         f.name = Tix.LabelEntry(f, label='Username:', labelside=Tix.LEFT)
         f.name.label.config(width=10)
+        f.name.entry.config(width=10)
         f.name.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
         f.pwd = Tix.LabelEntry(f, label='Password:', labelside=Tix.LEFT)
         f.pwd.label.config(width=10)
+        f.pwd.entry.config(width=10)
         f.pwd.entry.config(show="*")
         f.pwd.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
 
@@ -121,7 +125,7 @@ class Homepage:
 
         tab.f.shl = Tix.ScrolledHList(tab.f)
         tab.f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=9)
-
+        tab.f.shl.hlist.config(bg='#333333')
         self.update_directory(dirid)
         return
 
@@ -255,6 +259,18 @@ class Homepage:
                 i.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
 
             f.shl.hlist.add('I%s' % row['id'], itemtype=Tix.WINDOW, window=rowf)
+
+        tab.f = f
+        return
+
+    def create_page_editor(self, nb, docid):
+        tab = nb.editor
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.tb = TextBox(f, f)
+        f.tb.initialize(self.user, Document(docid))
+        f.tb.frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f = f
         return
@@ -420,43 +436,6 @@ class Homepage:
         except:
             return
 
-    def update_directory(self, dirid):
-        if dirid == 0:
-            return
-
-        tab = self.nb.directory
-        curr = tab.f.curr
-        shl = tab.f.shl
-        shl.hlist.delete_all()
-
-        self.directory = self.user.manage.manage_DB.get_info('directory',
-            rowid=dirid)
-        curr.config(label=self.directory['name'],
-            command=lambda i=self.directory['parent_dir']:
-            self.update_directory(i))
-
-        folders = self.user.manage.manage_Dirs.get_directory_directories(dirid)
-        files = self.user.manage.manage_Docs.get_directory_documents(dirid)
-
-        for row in folders:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
-                command=lambda i=row['id']: self.update_directory(i))
-            shl.hlist.add('D%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
-
-        for row in files:
-            lb = LabelButton(shl.hlist, label=row['name'], button='View',
-                command=lambda i=row['id']: self.update_directory(i))
-            shl.hlist.add('F%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
-
-        try:
-            # Get the logical path for the supplied directory.
-            path_logical = self.user.manage.manage_Dirs.get_directory_path(
-                self.directory['id'])[0]
-            self.nb.make.f.msg.config(text="""The item will be created @ %s""" % path_logical)
-        except:
-            return
-        return
-
     def handler_approve_app(self, rowid):
         res = self.user.accept_application(rowid)
         if res:
@@ -506,6 +485,50 @@ class Homepage:
             tkMessageBox.showerror('Failed', 'Membership failed.')
         return
 
+    def handler_open_document(self, docid):
+        try:
+            self.nb.add('editor', label="Editor", underline=0)
+            self.create_page_editor(self.nb, docid)
+            return
+        except:
+            return
+
+    def update_directory(self, dirid):
+        if dirid == 0:
+            return
+
+        tab = self.nb.directory
+        curr = tab.f.curr
+        shl = tab.f.shl
+        shl.hlist.delete_all()
+
+        self.directory = self.user.manage.manage_DB.get_info('directory',
+            rowid=dirid)
+        curr.config(label=self.directory['name'],
+            command=lambda i=self.directory['parent_dir']:
+            self.update_directory(i))
+
+        folders = self.user.manage.manage_Dirs.get_directory_directories(dirid)
+        files = self.user.manage.manage_Docs.get_directory_documents(dirid)
+
+        for row in folders:
+            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+                command=lambda i=row['id']: self.update_directory(i))
+            shl.hlist.add('D%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
+
+        for row in files:
+            lb = LabelButton(shl.hlist, label=row['name'], button='View',
+                command=lambda i=row['id']: self.handler_open_document(i))
+            shl.hlist.add('F%s' % row['id'], itemtype=Tix.WINDOW, window=lb)
+
+        try:
+            # Get the logical path for the supplied directory.
+            path_logical = self.user.manage.manage_Dirs.get_directory_path(
+                self.directory['id'])[0]
+            self.nb.make.f.msg.config(text="""The item will be created @ %s""" % path_logical)
+        except:
+            return
+        return
 
 class LabelButton(Tix.Frame):
 
