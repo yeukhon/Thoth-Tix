@@ -269,7 +269,7 @@ class SuperUser(User):
             if res:
                 # Create the user dictionary for the new user.
                 self.manage.manage_DB.init_table_usrdic(username=username)
-                
+
                 # Return True to indicate success.
                 return True
 
@@ -289,6 +289,31 @@ class SuperUser(User):
 
         # Return False to indicate failure.
         return False
+
+    def get_all_complaints(self):
+        # Query for all complaints for the supplied document.
+        rows = self.manage.manage_DB.get_info('complaint', where={
+            'status':0})
+
+        # Return comments as a list.
+        res = []
+        for row in rows:
+            # Get the information for the supplied document.
+            doc_info = self.manage.manage_DB.get_info('document',
+                rowid=row['docid'])
+
+            # Get the information for the user that wrote the comment.
+            usr_info = self.manage.manage_DB.get_info('user',
+                rowid=row['userid'])
+
+            # Create a dictionary with the results and add the dictionary to
+            # the list.
+            res.append({'id': row['id'], 'doc': doc_info['name'],
+                'user': usr_info['username'], 'content': row['content'],
+                'time': datetime.fromtimestamp(int(row['time']))})
+
+        # Return the list of results.
+        return res
 
     def response_complaint(self, compid, valid, response, verbose=False):
         if verbose: print '\nStarting response_complaint:'

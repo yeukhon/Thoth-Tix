@@ -2,33 +2,40 @@ from textbox import TextBox
 from datetime import datetime
 import os
 import json
+import Tix
 
 
-class HistoryUI:
+class HistoryUI(Tix.Frame):
 
-    def __init__(self, master, parent, document):
-        self.parent = parent
+    def __init__(self, master, document):
         self.master = master
         self.document = document
-        self.frame = Frame(master, relief=FLAT)
+        self.frame = Tix.Frame(master)
 
+        print 'pass frame'
         # Get the history for the supplied document.
         self.get_document_history()
-
+        print 'pass gdh'
+        # Create a variable to hold the history frames.
+        self.frames = []
         # If there is a history for the supplied document:
         if self.history:
-            # Create a variable to hold the history frames.
-            self.frames = []
+            print 'pass doc his'
             # For 3 times:
             for item in self.history:
-                # Append the history frame for the current history.
-                self.frames.append(self.init_frame_history(item))
-                self.frames[-1].grid()
+                if item['content']:
+                    print item
+                    # Append the history frame for the current history.
+                    self.frames.append(self.init_frame_history(item))
+                    self.frames[-1].pack(side=Tix.TOP, padx=2, pady=2,
+                        fill=Tix.BOTH, expand=1)
         # Else there is no history for the supplied document:
-        else:
-            Label(self.frame, text="There are no changes to the document!").grid()
+        if len(self.frames) == 0:
+            lb = Tix.Label(self.frame,
+                text="There are no changes to the document!")
+            lb.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
-        self.frame.grid()
+
 
         return
 
@@ -59,7 +66,7 @@ class HistoryUI:
         # Get the user who made the current changes.
         user = self.document.manage.manage_DB.get_info('user', where={
             'id': history['userid']})
-
+        print 'pass user'
         # If the user was not found:
         if not user:
             # User is default Anon.
@@ -67,29 +74,23 @@ class HistoryUI:
         # Else user was found:
         else:
             user = user[0]['username']
+        print 'pass name', user
+        frame_history = Tix.ScrolledHList(self.frame)
+        frame_history.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass shl'
+        frame_history.hlist.add('user', itemtype=Tix.TEXT,
+            text='By %s @ %s' % (user,
+            datetime.fromtimestamp(int(history['time']))))
 
-        frame_history = LabelFrame(
-            self.frame,
-            text='By %s @ %s' % (user, datetime.fromtimestamp(int(history['time']))))
+        #~ height = len(history['content'])
+        #~ if height > 10:
+            #~ height = 10
 
-        height = len(history['content'])
-        if height > 10:
-            height = 10
-
-        text_history = Text(frame_history, height=height)
-        text_history.pack(side=LEFT, fill='both', expand=1)
-
-        # The vertical scrollbar.
-        scroll_vbar = Scrollbar(frame_history, orient=VERTICAL)
-        scroll_vbar.pack(fill='y', side=RIGHT)
-
-        # The vertical scrollbar needs to be linked to the text widget that has
-        # the user content otherwise the scrollbar will not scroll the text.
-        text_history.config(yscrollcommand=scroll_vbar.set)
-        scroll_vbar.config(command=text_history.yview)
-
-        text_history.insert('1.0', '\n'.join(history['content']))
-        text_history.config(state=DISABLED)
+        count = 0
+        for i in history['content']:
+            frame_history.hlist.add('H%s' % count, itemtype=Tix.TEXT,
+                text=i)
+            count += 1
 
         return frame_history
 

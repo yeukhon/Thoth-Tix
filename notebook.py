@@ -6,6 +6,7 @@ from textbox import TextBox
 from document import Document
 from docui_buttons import DocSideButtons
 from docui_search import DocSearchUI
+from historyui import HistoryUI
 
 
 class Homepage:
@@ -282,11 +283,135 @@ class Homepage:
         f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y)
 
         f.tb = TextBox(f, f)
-        f.tb.initialize(self.user, Document(docid))
+        f.document = Document(docid)
+        f.tb.initialize(self.user, f.document)
         f.tb.frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
-        f.dsb = DocSideButtons(f, f.tb, self.user)
-        f.dsb.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        tab.f = f
+
+        self.handler_page_comment()
+        if self.user.info['usergroup'] != 4:
+            self.handler_page_editorPlus()
+            self.handler_page_history(f.document)
+        return
+
+    def create_page_editorPlus(self, nb):
+        tab = nb.editorPlus
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.inv = Tix.Frame(f)
+        f.inv.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.inv.name = Tix.LabelEntry(f.inv, label="Enter the user's name:")
+        f.inv.name.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.inv.bname = Tix.Button(f.inv, text='Invite',
+            command=self.handler_invite_user)
+        f.inv.bname.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.cmpt = Tix.Frame(f)
+        f.cmpt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.cmpt.text = Tix.LabelEntry(f.cmpt, label="Complaint:")
+        f.cmpt.text.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.cmpt.btext = Tix.Button(f.cmpt, text='Submit',
+            command=self.handler_user_complaint)
+        f.cmpt.btext.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        tab.f = f
+        return
+
+    def create_page_comment(self, nb):
+        tab = nb.comment
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.shl = Tix.ScrolledHList(f)
+        f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=9)
+
+        docid = self.nb.editor.f.tb.document.info['id']
+        invs = self.nb.editor.f.tb.document.get_document_comments(docid)
+        for row in invs:
+            rowf = Tix.Frame(f.shl.hlist)
+            item = [
+                Tix.Label(rowf, text=row['user'], width=10),
+                Tix.Label(rowf, text=row['content'], width=30),
+                Tix.Label(rowf, text=row['time'], width=20)
+            ]
+
+            item[0].pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+            item[2].pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y, expand=1)
+            item[1].pack(side=Tix.BOTTOM, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+            f.shl.hlist.add('I%s' % row['id'], itemtype=Tix.WINDOW, window=rowf)
+
+        f.cmt = Tix.Frame(f)
+        f.cmt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.cmt.msg = Tix.LabelEntry(f.cmt, label='Leave a comment:', labelside=Tix.TOP)
+        f.cmt.msg.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.cmt.bcmt = Tix.Button(f.cmt, text='Submit',
+            command=self.handler_user_comment)
+        f.cmt.bcmt.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        tab.f = f
+        return
+
+    def create_page_complaint(self, nb):
+        tab = nb.complaint
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.shl = Tix.ScrolledHList(f)
+        f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=9)
+
+        invs = self.user.get_all_complaints()
+        for row in invs:
+            rowf = Tix.Frame(f.shl.hlist)
+            item = [
+                Tix.Label(rowf, text=row['ID'], width=3),
+                Tix.Label(rowf, text=row['user'], width=10),
+                Tix.Label(rowf, text=row['content'], width=30),
+                Tix.Label(rowf, text=row['time'], width=20)
+            ]
+
+            item[0].pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+            item[1].pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+            item[2].pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+            item[3].pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+            f.shl.hlist.add('I%s' % row['id'], itemtype=Tix.WINDOW, window=rowf)
+
+        f.res = Tix.Frame(f)
+        f.res.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        f.res.ID = Tix.LabelEntry(f.res, label='ID:', labelside=Tix.LEFT)
+        f.res.ID.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        f.res.chk = Tix.OptionMenu(f.res, label='Valid:')
+        f.res,chk.add_command('1', label='Yes')
+        f.res,chk.add_command('-1', label='No')
+        f.res.chk.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        f.res.txt = Tix.LabelEntry(f.res, label='Response:', labelside=Tix.LEFT)
+        f.res.txt.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        f.res.btn = Tix.Button(f.res, text='Submit')
+        f.res.btn.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.Y, expand=1)
+
+        tab.f = f
+        return
+
+    def create_page_history(self, nb, document):
+        tab = nb.history
+        f = Tix.Frame(tab)
+        f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+        print 'pass hisf'
+        f.history = HistoryUI(f, document)
+        f.history.frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f = f
         return
@@ -311,6 +436,7 @@ class Homepage:
                 self.create_page_control(self.nb)
                 self.nb.add('application', label="Apps", underline=0)
                 self.create_page_applications(self.nb)
+                self.handler_page_complaint()
             else:
                 # Update the User instance with the new user information.
                 self.user = RegularUser(userid=res['id'])
@@ -517,7 +643,96 @@ class Homepage:
 
     def handler_close_document(self):
         self.nb.delete('editor')
+        self.nb.delete('comment')
+        if self.user.info['usergroup'] != 4:
+            self.nb.delete('editorPlus')
+            self.nb.delete('history')
         return
+
+    def handler_page_history(self, document):
+        print 'pass hand'
+        try:
+            self.nb.add('history', label="History", underline=0)
+            self.create_page_history(self.nb, document)
+            return
+        except:
+            return
+
+    def handler_page_editorPlus(self):
+        try:
+            self.nb.add('editorPlus', label="Editor+")
+            self.create_page_editorPlus(self.nb)
+            return
+        except:
+            return
+
+    def handler_invite_user(self):
+        name = self.nb.editorPlus.f.inv.name.entry.get()
+        if not name:
+            return
+
+        res = self.user.manage.manage_DB.get_info('user',
+            where={'username': name})
+
+        if res and name.lower() != self.user.info['username'].lower():
+            content = 'I am inviting you to become a contributor of this document.'
+            docid = self.nb.editor.f.tb.document.info['id']
+            self.user.send_invitation_to(docid, res[-1]['id'], content)
+            self.nb.editorPlus.f.inv.name.entry.delete(0, len(name))
+            tkMessageBox.showinfo('Invitation', 'Invitation sent to %s.' % name)
+        else:
+            if name.lower() == self.user.info['username'].lower():
+                tkMessageBox.showerror('Invitation', 'You cannot invite yourself.')
+            else:
+                tkMessageBox.showerror('Invitation', 'The username does not exist!')
+
+    def handler_user_comment(self):
+        content = self.nb.comment.f.cmt.msg.entry.get()
+        if not content:
+            return
+
+        docid = self.nb.editor.f.tb.document.info['id']
+        res = self.user.comment(docid, content)
+
+        if res:
+            self.nb.delete('comment')
+            self.handler_page_comment()
+            tkMessageBox.showinfo('Succes', 'Comment was added.')
+        else:
+            tkMessageBox.showerror('Failure', 'Your comment was not added.')
+
+        return
+
+    def handler_page_comment(self):
+        try:
+            self.nb.add('comment', label="Comments")
+            self.create_page_comment(self.nb)
+            return
+        except:
+            return
+
+    def handler_user_complaint(self):
+        content = self.nb.editorPlus.f.cmpt.text.entry.get()
+        if not content:
+            return
+
+        docid = self.nb.editor.f.tb.document.info['id']
+        res = self.user.complain(docid, content)
+
+        if res:
+            tkMessageBox.showinfo('Succes', 'Complaint was sent to the Admin.')
+        else:
+            tkMessageBox.showerror('Failure', 'Your complaint was not sent.')
+
+        return
+
+    def handler_page_complaint(self):
+        try:
+            self.nb.add('complaint', label="Complaint")
+            self.create_page_complaint(self.nb)
+            return
+        except:
+            return
 
     def update_directory(self, dirid):
         if dirid == 0:
