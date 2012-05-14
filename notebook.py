@@ -1,8 +1,11 @@
 import Tix
+import Tkinter as tk
 import tkMessageBox
 from user import Guest, RegularUser, SuperUser
 from textbox import TextBox
 from document import Document
+from docui_buttons import DocSideButtons
+from docui_search import DocSearchUI
 
 
 class Homepage:
@@ -25,7 +28,8 @@ class Homepage:
         master.option_add(prefix+'*TixNoteBook*tagPadX', 8)
 
         # Create the notebook widget.
-        self.nb = Tix.NoteBook(master, name='nb', ipadx=6, ipady=6)
+        self.nb = Tix.NoteBook(master, name='nb', ipadx=6, ipady=6,
+            width=400, height=400)
 
         # Create the two tabs on the notebook. The -underline option
         # puts a underline on the first character of the labels of the tabs.
@@ -121,10 +125,10 @@ class Homepage:
         tab.f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f.curr = LabelButton(tab.f, label='', button='Go Up')
-        tab.f.curr.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=1)
+        tab.f.curr.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.X, expand=1)
 
         tab.f.shl = Tix.ScrolledHList(tab.f)
-        tab.f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=9)
+        tab.f.shl.pack(side=Tix.TOP, padx=20, pady=2, fill=Tix.BOTH, expand=1000)
         tab.f.shl.hlist.config(bg='#333333')
         self.update_directory(dirid)
         return
@@ -268,9 +272,21 @@ class Homepage:
         f = Tix.Frame(tab)
         f.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
+        f.btns = Tix.Frame(f)
+        f.btns.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.X, expand=1)
+
+        f.btns.save = Tix.Button(f.btns, text='Save', command=self.handler_save_document)
+        f.btns.save.pack(side=Tix.LEFT, padx=2, pady=2, fill=Tix.Y)
+
+        f.btns.close = Tix.Button(f.btns, text='Close', command=self.handler_close_document)
+        f.btns.close.pack(side=Tix.RIGHT, padx=2, pady=2, fill=Tix.Y)
+
         f.tb = TextBox(f, f)
         f.tb.initialize(self.user, Document(docid))
         f.tb.frame.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
+
+        f.dsb = DocSideButtons(f, f.tb, self.user)
+        f.dsb.pack(side=Tix.TOP, padx=2, pady=2, fill=Tix.BOTH, expand=1)
 
         tab.f = f
         return
@@ -492,6 +508,16 @@ class Homepage:
             return
         except:
             return
+
+    def handler_save_document(self):
+        content = self.nb.editor.f.tb.text_content.get('1.0', tk.END)
+        userid = self.user.info['id']
+        self.nb.editor.f.tb.document.save(content, userid)
+        return
+
+    def handler_close_document(self):
+        self.nb.delete('editor')
+        return
 
     def update_directory(self, dirid):
         if dirid == 0:

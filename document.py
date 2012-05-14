@@ -186,7 +186,7 @@ class Document:
             # Else if the line has been added:
             elif line[0:2] == '+ ':
                 # Increment the line count.
-                count += content[count:].index(line[2:]) + 1
+                count += content[count-1:].index(line[2:]) + 1
                 # Add the diff and line number to the output list.
                 output.append('+ %i %s' % (count, line[2:].replace('\n', '')))
         print '\n'.join(output)
